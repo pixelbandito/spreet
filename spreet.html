@@ -1,14 +1,34 @@
 <head>
-  <title>spreet</title>
+    <title>spreet</title>
 </head>
 
 <body>
-  <h1>Welcome to Meteor!</h1>
-
-  {{> hello}}
+    <h1>Welcome to Meteor!</h1> {{> loginButtons}} {{> hello}}
 </body>
 
 <template name="hello">
-  <button>Click Me</button>
-  <p>You've pressed the button {{counter}} times.</p>
+    <button>Click Me</button>
+    <p>You've pressed the button {{counter}} times.</p>
+</template>
+
+<template name="home">
+    Hi, I'm home.
+</template>
+
+<template name="admin">
+    Add churches > {{> addChurchForm}}
+</template>
+
+<template name="addChurchForm">
+    <form>
+        <fieldset>
+            <legend>Add a church</legend>
+            <div>
+                <label>{{firstLabel}}</label>
+                <input type="{{firstType}}" min="{{firstMin}}" max="{{firstMax}}" placeholder="{{firstPlaceholder}}">
+                <p>{{firstHelp}}</p>
+            </div>
+        </fieldset>
+        <button type="submit">Submit</button>
+    </form>
 </template>
