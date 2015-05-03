@@ -16,19 +16,51 @@
 </template>
 
 <template name="admin">
-    Add churches > {{> addChurchForm}}
+    {{#if addChurchFormVisible}}
+        <button data-click="hideAddChurchForm">Stop adding a church</button>
+    {{else}}
+        <button data-click="showAddChurchForm">Add a church</button>
+    {{/if}}
+    {{#if addChurchFormVisible}}
+        {{> addChurchForm}}
+    {{/if}}
 </template>
 
 <template name="addChurchForm">
     <form>
+        {{#each forms}}
+            <fieldset>
+                <legend>{{legend}}</legend>
+                {{#each fields}}
+                <div>
+                    <label>{{label}}</label>
+                    {{#if input}}
+                        <input type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}" value="{{value}}">
+                    {{/if}}
+                    {{#if textarea}}
+                        <textarea type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}">{{value}}</textarea>
+                    {{/if}}
+                    {{#if select}}
+                        <select value="{{value}}">
+                            {{#if placeholder}}
+                                {{#if value}}
+                                    <option disabled placeholder>{{placeholder}}</option>
+                                {{else}}
+                                    <option disabled selected placeholder>{{placeholder}}</option>
+                                {{/if}}
+                            {{/if}}
+                            {{#each choices}}
+                                <option value="{{key}}">{{value}}</option>
+                            {{/each}}
+                        </select>
+                    {{/if}}
+                    <p>{{help}}</p>
+                </div>
+                {{/each}}
+            </fieldset>
+        {{/each}}
         <fieldset>
-            <legend>Add a church</legend>
-            <div>
-                <label>{{firstLabel}}</label>
-                <input type="{{firstType}}" min="{{firstMin}}" max="{{firstMax}}" placeholder="{{firstPlaceholder}}">
-                <p>{{firstHelp}}</p>
-            </div>
+            <button type="submit">Submit</button>
         </fieldset>
-        <button type="submit">Submit</button>
     </form>
 </template>
