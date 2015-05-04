@@ -1,47 +1,60 @@
 <head>
-    <title>spreet</title>
+    <title>Spreet</title>
 </head>
 
-<body>
-    <h1>Welcome to Meteor!</h1> {{> loginButtons}} {{> hello}}
-</body>
-
-<template name="hello">
-    <button>Click Me</button>
-    <p>You've pressed the button {{counter}} times.</p>
-</template>
-
 <template name="home">
-    Hi, I'm home.
+    <div class="container">
+        <div class="pull-right">
+            {{> loginButtons}}
+        </div>
+        <h1>Welcome to Meteor!</h1>
+        <hr>
+        Hi, I'm home.
+    </div>
 </template>
 
 <template name="admin">
-    {{#if addChurchFormVisible}}
-        <button data-click="hideAddChurchForm">Stop adding a church</button>
-    {{else}}
-        <button data-click="showAddChurchForm">Add a church</button>
-    {{/if}}
-    {{#if addChurchFormVisible}}
-        {{> addChurchForm}}
-    {{/if}}
+    <div class="container">
+        <div class="pull-right">
+            {{> loginButtons}}
+        </div>
+        <h1>Welcome to Meteor!</h1>
+        <hr>
+        <fieldset>
+            <div class="form-group">
+                {{#if addChurchFormVisible}}
+                    <button class="btn btn-default" data-click="hideAddChurchForm"><i class="fa fa-ban"></i> Stop adding a church</button>
+                {{else}}
+                    <button class="btn btn-default" data-click="showAddChurchForm"><i class="fa fa-plus"></i> Add a church</button>
+                {{/if}}
+            </div>
+        </fieldset>
+        {{#if addChurchFormVisible}}
+            {{> addChurchForm}}
+        {{/if}}
+    </div>
 </template>
 
 <template name="addChurchForm">
-    <form>
-        {{#each forms}}
+    <form class="form form-block">
+        {{#each addChurchForm.forms}}
             <fieldset>
                 <legend>{{legend}}</legend>
                 {{#each fields}}
-                <div>
+                <div class="form-group">
                     <label>{{label}}</label>
                     {{#if input}}
-                        <input type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}" value="{{value}}">
+                        {{#if typeahead}}
+                            <input class="form-control typeahead" type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}" value="{{value}}" data-source="{{typeahead}}" data-highlight="true" data-autoselect="true">
+                        {{else}}
+                            <input class="form-control" type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}" value="{{value}}">
+                        {{/if}}
                     {{/if}}
                     {{#if textarea}}
-                        <textarea type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}">{{value}}</textarea>
+                        <textarea class="form-control" type="{{type}}" min="{{min}}" max="{{max}}" placeholder="{{placeholder}}">{{value}}</textarea>
                     {{/if}}
                     {{#if select}}
-                        <select value="{{value}}">
+                        <select class="form-control" value="{{value}}">
                             {{#if placeholder}}
                                 {{#if value}}
                                     <option disabled placeholder>{{placeholder}}</option>
@@ -54,13 +67,17 @@
                             {{/each}}
                         </select>
                     {{/if}}
-                    <p>{{help}}</p>
+                    {{#if help}}
+                        <p class="text-muted small">{{help}}</p>
+                    {{/if}}
                 </div>
                 {{/each}}
             </fieldset>
         {{/each}}
         <fieldset>
-            <button type="submit">Submit</button>
+            <div class="form-group">
+                <button class="btn btn-primary" type="submit">Submit</button>
+            </div>
         </fieldset>
     </form>
 </template>

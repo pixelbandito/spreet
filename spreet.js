@@ -105,6 +105,7 @@ var Datum = Class.extend({
         this.fieldType = 'text';
         this.validator = new RegExp();
         this.choices = [];
+        this.typeahead = false;
         data = (typeof data == 'object') ? data : {};
         for (key in data) {
             if (typeof this[key] != 'undefined') {
@@ -120,7 +121,8 @@ var Datum = Class.extend({
             help: this.help,
             min: this.min,
             max: typeof this.max == 'number' && this.max || null,
-            value: this.value
+            value: this.value,
+            typeahead: this.typeahead
         }
         switch(this.fieldType) {
             case 'text':
@@ -179,6 +181,7 @@ var DatumChoice = Datum.extend({
         delete this.max;
         delete this.min;
         delete this.validator;
+        delete this.typeahead;
     },
     getField: function() {
         var field = {
@@ -188,7 +191,8 @@ var DatumChoice = Datum.extend({
             value: this.value,
             choices: this.choices,
             select: true,
-            placeholder: this.placeholder
+            placeholder: this.placeholder,
+            typeahead: this.typeahead
         };
         return field;
     }
@@ -219,6 +223,7 @@ var DatumNumber = Datum.extend({
             }
         }
         this._super(data);
+        delete this.typeahead;
     }
 });
 
@@ -270,9 +275,9 @@ var Church = Class.extend({
             ]
         }); // Create form
         this.faith = new DatumText({label: 'Faith', placeholder: 'Christian', help: '', required: true, value: 'Christian'}); // Create form
-        this.denomination = new DatumText({label: 'Denomination', placeholder: 'Methodist', help: '', required: true}); // Create form
-        this.worshipStyle = new DatumText({label: 'Worship style', placeholder: 'Contemporary', help: '', required: false}); // Create form
-        this.messageStyle = new DatumText({label: 'Message style', placeholder: 'Instructional', help: '', required: false}); // Create form
+        this.denomination = new DatumText({label: 'Denomination', placeholder: '', help: '', required: true, typeahead: 'Denominations.name'}); // Create form
+        this.worshipStyle = new DatumText({label: 'Worship style', placeholder: '', help: '', required: false, typeahead: 'WorshipStyles.name'}); // Create form
+        this.messageStyle = new DatumText({label: 'Message style', placeholder: '', help: '', required: false, typeahead: 'MessageStyles.name'}); // Create form
         this.relatedChurches = []; // Create form
         this.integrations = {}; // Sub-form
         this.services = {}; // Sub-form
@@ -318,7 +323,6 @@ var Church = Class.extend({
         for (var i = 0; i < this.adminFields.length; i++) {
             form.forms[0].fields.push(this.adminFields[i].getField());
         }
-        console.log(form);
         return form;
     }
 });
@@ -330,22 +334,6 @@ if (Meteor.isClient) {
         title: "Spreet",
         suffix: "Spreet"
       }
-    });
-
-    // counter starts at 0
-    Session.setDefault('counter', 0);
-
-    Template.hello.helpers({
-        counter: function () {
-            return Session.get('counter');
-        }
-    });
-
-    Template.hello.events({
-        'click button': function () {
-            // increment the counter when button is clicked
-            Session.set('counter', Session.get('counter') + 1);
-        }
     });
 
     // View - admin screen
@@ -369,13 +357,14 @@ if (Meteor.isClient) {
     // View - add church form
     var inputChurch = new Church();
     var addChurchForm = inputChurch.getForm();
+    Template.addChurchForm.rendered = function() {
+        Meteor.typeahead.inject();
+    };
     Template.addChurchForm.helpers({
-        denominations: function() {
-            return Denominations.find().fetch().map(function(it) {return it.name});
-        }
+        addChurchForm: addChurchForm
     });
 
-    Template.addChurchForm.helpers(addChurchForm);
+    // Template.addChurchForm.helpers(addChurchForm);
     // Template.addChurchForm.events(addChurchForm);
 
     // Sample church
@@ -406,7 +395,6 @@ if (Meteor.isServer) {
         // code to run on server at startup
 
         // Lists from which to autocomplete
-        // Denominations = new Meteor.Collection('denominations');
         var denominations = [
             {name: 'Catholic - Latin Catholic'},
             {name: 'Catholic - Eastern Catholic'},
@@ -427,8 +415,41 @@ if (Meteor.isServer) {
             {name: 'Unitarian'},
             {name: 'Non-denominational'},
         ];
+        Denominations.remove({
+            name: '$exists'
+        });
         for (var i = 0; i < denominations.length; i++) {
+            Denominations.remove(denominations[i]);
             Denominations.insert(denominations[i]);
+        }
+        var worshipStyles = [
+            {name: 'Contemporary'},
+            {name: 'Traditional'},
+            {name: 'Classical'},
+            {name: 'Acoustic'},
+            {name: 'Alternative'},
+            {name: 'Acapella'},
+            {name: 'Choral'},
+            {name: 'Instrumental'}
+        ];
+        for (var i = 0; i < worshipStyles.length; i++) {
+            WorshipStyles.remove(worshipStyles[i]);
+            WorshipStyles.insert(worshipStyles[i]);
+        }
+        var messageStyles = [
+            {name: 'Educational'},
+            {name: 'Inspirational'},
+            {name: 'Aspirational'},
+            {name: 'Strategic'},
+            {name: 'Metaphysical'},
+            {name: 'Co-operative'}
+        ];
+        MessageStyles.remove({
+            name: '$exists'
+        });
+        for (var i = 0; i < messageStyles.length; i++) {
+            MessageStyles.remove(messageStyles[i]);
+            MessageStyles.insert(messageStyles[i]);
         }
     });
 }
