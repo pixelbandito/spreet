@@ -1,68 +1,3 @@
-/* Simple JavaScript Inheritance
- * By John Resig http://ejohn.org/
- * MIT Licensed.
- */
-// Inspired by base2 and Prototype
-(function(){
-    var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
-
-    // The base Class implementation (does nothing)
-    this.Class = function(){};
-
-    // Create a new Class that inherits from this class
-    Class.extend = function(prop) {
-        var _super = this.prototype;
-
-        // Instantiate a base class (but only create the instance,
-        // don't run the init constructor)
-        initializing = true;
-        var prototype = new this();
-        initializing = false;
-
-        // Copy the properties over onto the new prototype
-        for (var name in prop) {
-            // Check if we're overwriting an existing function
-            prototype[name] = typeof prop[name] == "function" &&
-                typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-                (function(name, fn){
-                    return function() {
-                        var tmp = this._super;
-
-                        // Add a new ._super() method that is the same method
-                        // but on the super-class
-                        this._super = _super[name];
-
-                        // The method only need to be bound temporarily, so we
-                        // remove it when we're done executing
-                        var ret = fn.apply(this, arguments);
-                        this._super = tmp;
-
-                        return ret;
-                    };
-                })(name, prop[name]) :
-                prop[name];
-        }
-
-        // The dummy class constructor
-        function Class() {
-            // All construction is actually done in the init method
-            if ( !initializing && this.init )
-                this.init.apply(this, arguments);
-        }
-
-        // Populate our constructed prototype object
-        Class.prototype = prototype;
-
-        // Enforce the constructor to be what we expect
-        Class.prototype.constructor = Class;
-
-        // And make this class extendable
-        Class.extend = arguments.callee;
-
-        return Class;
-    };
-})();
-
 /* TODO:
     Create classes for relevant data types
     * Church
@@ -112,6 +47,7 @@ var Datum = Class.extend({
                 this[key] = data[key];
             }
         }
+        this.id = this.label.replace(/\s/g,'');
     },
     getField: function() {
         var field = {
@@ -122,7 +58,8 @@ var Datum = Class.extend({
             min: this.min,
             max: typeof this.max == 'number' && this.max || null,
             value: this.value,
-            typeahead: this.typeahead
+            typeahead: this.typeahead,
+            name: this.id
         }
         switch(this.fieldType) {
             case 'text':
@@ -136,6 +73,19 @@ var Datum = Class.extend({
                 break;
         }
         return field;
+    },
+    setValue: function(data) {
+        this.value = data;
+        console.log('set value of ', this.label, 'to',data);
+    }
+});
+
+var Field = Class.extend({
+    init: function(data) {
+        data = (typeof data == 'object') ? data : {};
+        var defaultData = {
+
+        };
     }
 });
 
@@ -192,7 +142,8 @@ var DatumChoice = Datum.extend({
             choices: this.choices,
             select: true,
             placeholder: this.placeholder,
-            typeahead: this.typeahead
+            typeahead: this.typeahead,
+            name: this.id
         };
         return field;
     }
@@ -237,6 +188,8 @@ WorshipStyles = new Meteor.Collection('worshipStyles');
 
 MessageStyles = new Meteor.Collection('messageStyles');
 
+// TODO: Abstract out forms into their own Class.
+// TODO: Add serialization before sticking into MongoDB
 var Church = Class.extend({
     init: function(data) {
         this.id = new DatumText({value: newUuid()}); // Auto
@@ -276,8 +229,8 @@ var Church = Class.extend({
         }); // Create form
         this.faith = new DatumText({label: 'Faith', placeholder: 'Christian', help: '', required: true, value: 'Christian'}); // Create form
         this.denomination = new DatumText({label: 'Denomination', placeholder: '', help: '', required: true, typeahead: 'Denominations.name'}); // Create form
-        this.worshipStyle = new DatumText({label: 'Worship style', placeholder: '', help: '', required: false, typeahead: 'WorshipStyles.name'}); // Create form
-        this.messageStyle = new DatumText({label: 'Message style', placeholder: '', help: '', required: false, typeahead: 'MessageStyles.name'}); // Create form
+        this.worshipStyle = new DatumText({label: 'Worship Style', placeholder: '', help: '', required: false, typeahead: 'WorshipStyles.name'}); // Create form
+        this.messageStyle = new DatumText({label: 'Message Style', placeholder: '', help: '', required: false, typeahead: 'MessageStyles.name'}); // Create form
         this.relatedChurches = []; // Create form
         this.integrations = {}; // Sub-form
         this.services = {}; // Sub-form
@@ -324,6 +277,22 @@ var Church = Class.extend({
             form.forms[0].fields.push(this.adminFields[i].getField());
         }
         return form;
+    },
+    resetChurch: function() {
+        this.init();
+    },
+    updateValues: function(data) {
+        console.log('updatingValues', data);
+        this.name.setValue(data.name);
+        this.description.setValue(data.description);
+        this.address.setValue(data.address);
+        this.city.setValue(data.city);
+        this.state.setValue(data.state);
+        this.zip.setValue(data.zip);
+        this.size.setValue(data.size);
+        this.denomination.setValue(data.denomination);
+        this.worshipStyle.setValue(data.worshipStyle);
+        this.messageStyle.setValue(data.messageStyle);
     }
 });
 
@@ -339,7 +308,7 @@ if (Meteor.isClient) {
     // View - admin screen
     Template.admin.helpers({
         addChurchFormVisible: function() {
-            return Session.get('addChurchFormVisible')
+            return Session.get('addChurchFormVisible');
         }
     });
     Template.admin.events({
@@ -348,24 +317,60 @@ if (Meteor.isClient) {
         },
         'click button[data-click="hideAddChurchForm"]': function() {
             Session.set('addChurchFormVisible', false);
-        },
-        'click button[data-click="clearChurchFormVisible"]': function() {
-
         }
     });
 
     // View - add church form
     var inputChurch = new Church();
     var addChurchForm = inputChurch.getForm();
+    console.log(addChurchForm);
+    Session.set('addChurchForm', addChurchForm);
     Template.addChurchForm.rendered = function() {
         Meteor.typeahead.inject();
     };
     Template.addChurchForm.helpers({
-        addChurchForm: addChurchForm
+        addChurchForm: function() {
+            return Session.get('addChurchForm');
+        }
+    });
+    Template.addChurchForm.events({
+        'submit form': function(event) {
+            var form = event.target;
+            writeChurch(form);
+            return false;
+        },
+        'click button[data-click="clearForm"]': function() {
+            clearChurchForm();
+        }
     });
 
-    // Template.addChurchForm.helpers(addChurchForm);
-    // Template.addChurchForm.events(addChurchForm);
+    function writeChurch(form) {
+        var churchData = {};
+        for (var i = 0; i < form.length; i++) {
+            var field = form[i];
+            console.log('setting field', field);
+            if (['text','textarea','select-one'].indexOf(field.type) >= 0) {
+                churchData.name = field.getAttribute('data-label');
+                churchData.description = field.Description;
+                churchData.address = field.Address;
+                churchData.city = field.City;
+                churchData.state = field.State;
+                churchData.zip = field.Zip;
+                churchData.size = field.Size;
+                churchData.denomination = field.Denomination;
+                churchData.worshipStyle = field.WorshipStyle;
+                churchData.messageStyle = field.MessageStyle;
+            }
+        }
+        // TODO: Make the datum keys match some element of the field dom
+        inputChurch.updateValues(churchData);
+        console.log(inputChurch);
+    }
+
+    function clearChurchForm() {
+        inputChurch.resetChurch();
+        Session.set('addChurchForm', addChurchForm);
+    }
 
     // Sample church
     var firstChurch = new Church({name: 'First Church'});
